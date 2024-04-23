@@ -20,25 +20,36 @@ app.use(cors());
 // connectDB();
 
 
-
-
 // User Registration Api
 app.post("/register", async (req, res) => {
     console.log(req.body);
     try {
-        let user = new User(req.body);
-        let result = await user.save();
+        const { email } = req.body;
+        // Check if the email already exists
+        const existingUser = await User.findOne({ email: email }).exec();
 
-        // we will delete password from user view for security Reson
-        result = result.toObject();
+        if (existingUser) {
+            return res.status(400).send("Email address already exists");
+         }
+
+        // Create a new user instance
+        let user = new User(req.body);
+        
+        // Save the new user to the database
+        await user.save();
+
+        // Remove password from the user object for security reasons
+        const result = user.toObject();
         delete result.password;
 
-        res.send(result);
+        // Return success response
+        res.status(200).json({ message: "Registration successful", user: result });
     } catch (error) {
         console.error("Error registering user:", error);
-        res.status(500).send("Internal Server Error");
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 // User Login Api
 app.post("/login", async (req, res) => {
