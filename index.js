@@ -51,18 +51,18 @@ app.post("/register", async (req, res) => {
         // Return success response
         // res.status(200).json({ message: "Registration successful", user: result });
 
-        Jwt.sign({result}, jwtKey, {expiresIn: "1h"}, (err, token) => {
+        Jwt.sign({ result }, jwtKey, { expiresIn: "1h" }, (err, token) => {
             if (err) {
                 res.status(500).json({ error: "Something went wrong, please try again later" });
             } else {
-                res.status(200).json({ 
+                res.status(200).json({
                     message: "Registration successful",
                     user: result, // Assuming `result` contains user details
                     auth: token
                 });
             }
         });
-        
+
 
     } catch (error) {
         console.error("Error registering user:", error);
@@ -78,7 +78,7 @@ app.post("/login", async (req, res) => {
 
         if (req.body.password && req.body.email) {
             let user = await User.findOne(req.body).select("-password");   // .select("-Password") This has use for remove password to display User
-           
+
             if (user) {
                 Jwt.sign({ user }, jwtKey, { expiresIn: "1h" }, (err, token) => {
                     if (err) {
@@ -90,7 +90,7 @@ app.post("/login", async (req, res) => {
             } else {
                 res.status(404).send({ result: "User not found" });
             }
-            
+
         }
         else {
             res.send({ result: "Invalid Email and password entry" });
@@ -102,8 +102,11 @@ app.post("/login", async (req, res) => {
     }
 })
 
+
+
+
 // New Product Addition Api
-app.post("/add-product", async (req, res) => {
+app.post("/add-product", verifyToken, async (req, res) => {
     try {
         let product = new Product(req.body);
         let result = await product.save();
@@ -115,8 +118,9 @@ app.post("/add-product", async (req, res) => {
     }
 });
 
+
 // Show all Product Api
-app.get("/products", async (req, res) => {
+app.get("/products", verifyToken, async (req, res) => {
     try {
         const products = await Product.find();
         if (products.length > 0) {
@@ -131,8 +135,9 @@ app.get("/products", async (req, res) => {
     }
 });
 
+
 // Delete Product Api
-app.delete("/product/:id", async (req, res) => {
+app.delete("/product/:id", verifyToken,  async (req, res) => {
     try {
         let result = await Product.deleteOne({ _id: req.params.id });
         res.send(result)
@@ -146,7 +151,7 @@ app.delete("/product/:id", async (req, res) => {
 
 
 // Search Id API
-app.get("/product/:id", async (req, res) => {
+app.get("/product/:id", verifyToken, async (req, res) => {
     let result = await Product.findOne({ _id: req.params.id })
     if (result) {
         res.send(result)
@@ -156,7 +161,7 @@ app.get("/product/:id", async (req, res) => {
 })
 
 
-app.put("/product/:id", async (req, res) => {
+app.put("/product/:id", verifyToken, async (req, res) => {
     console.log(req.body);
     let result = await Product.updateOne(
         { _id: req.params.id },
@@ -167,7 +172,7 @@ app.put("/product/:id", async (req, res) => {
 
 
 // Search Api for searching product, name, etc
-app.get("/search/:key", async (req, res) => {
+app.get("/search/:key", verifyToken, async (req, res) => {
     const key = req.params.key;
     try {
         const result = await Product.find({
@@ -202,13 +207,29 @@ app.get("/profile", verifyToken, async (req, res) => {
     }
 });
 
+
+// Middileware for Verification
 function verifyToken(req, res, next) {
-    const token = req.headers['authorization'];
-    console.log("middileware is called",token);
-    next();
+    let token = req.headers['authorization'];
+    
+    if (token) {
+        token = token.split(' ')[1];
+        console.log("middileware if called", token);
+
+        Jwt.verify(token, jwtKey, (err, valid) => {
+            if (err) {
+                res.send("please provide valid token")
+            } else {
+                next();
+            }
+        })
+
+    } else {
+        res.send("Please add token with header");
+    }
+    console.log("middileware is called", token);
+    // next();
 }
-
-
 
 
 // Start server
