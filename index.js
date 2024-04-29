@@ -4,6 +4,10 @@ const cors = require('cors');
 require('./db/config');
 const User = require('./db/user');
 const Product = require('./db/product');
+
+const Jwt = require('jsonwebtoken')
+const jwtKey = 'e-comm'
+
 const app = express();
 
 app.use(express.json());
@@ -30,11 +34,11 @@ app.post("/register", async (req, res) => {
 
         if (existingUser) {
             return res.status(400).send("Email address already exists");
-         }
+        }
 
         // Create a new user instance
         let user = new User(req.body);
-        
+
         // Save the new user to the database
         await user.save();
 
@@ -42,8 +46,24 @@ app.post("/register", async (req, res) => {
         const result = user.toObject();
         delete result.password;
 
+
+
         // Return success response
-        res.status(200).json({ message: "Registration successful", user: result });
+        // res.status(200).json({ message: "Registration successful", user: result });
+
+        Jwt.sign({result}, jwtKey, {expiresIn: "1h"}, (err, token) => {
+            if (err) {
+                res.status(500).json({ error: "Something went wrong, please try again later" });
+            } else {
+                res.status(200).json({ 
+                    message: "Registration successful",
+                    user: result, // Assuming `result` contains user details
+                    auth: token
+                });
+            }
+        });
+        
+
     } catch (error) {
         console.error("Error registering user:", error);
         res.status(500).json({ error: "Internal Server Error" });
@@ -58,10 +78,19 @@ app.post("/login", async (req, res) => {
 
         if (req.body.password && req.body.email) {
             let user = await User.findOne(req.body).select("-password");   // .select("-Password") This has use for remove password to display User
-            if (user)
-                res.send(user);
-            else
-                res.send({ result: "No user found" });
+           
+            if (user) {
+                Jwt.sign({ user }, jwtKey, { expiresIn: "1h" }, (err, token) => {
+                    if (err) {
+                        console.error("Error signing JWT:", err);
+                        return res.status(500).send({ result: "Internal server error" });
+                    }
+                    res.status(200).send({ user, auth: token });
+                });
+            } else {
+                res.status(404).send({ result: "User not found" });
+            }
+            
         }
         else {
             res.send({ result: "Invalid Email and password entry" });
@@ -137,8 +166,8 @@ app.put("/product/:id", async (req, res) => {
 });
 
 
- // Search Api for searching product, name, etc
- app.get("/search/:key", async (req, res) => {
+// Search Api for searching product, name, etc
+app.get("/search/:key", async (req, res) => {
     const key = req.params.key;
     try {
         const result = await Product.find({
