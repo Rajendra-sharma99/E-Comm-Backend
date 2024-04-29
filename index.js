@@ -187,7 +187,7 @@ app.get("/search/:key", async (req, res) => {
 
 
 // Show all Registered user 
-app.get("/profile", async (req, res) => {
+app.get("/profile", verifyToken, async (req, res) => {
     try {
         const user = await User.find();
         if (user.length > 0) {
@@ -201,6 +201,13 @@ app.get("/profile", async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
+
+function verifyToken(req, res, next) {
+    const token = req.headers['authorization'];
+    console.log("middileware is called",token);
+    next();
+}
+
 
 
 
