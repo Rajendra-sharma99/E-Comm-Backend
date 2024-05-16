@@ -13,6 +13,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+
+// Database connecting
 // const connectDB = async()=> {
 //     mongoose.connect("mongodb://127.0.0.1:27017/e-comm");
 //     const productSchema = new mongoose.Schema({});
@@ -22,6 +24,8 @@ app.use(cors());
 
 // }
 // connectDB();
+
+app.get()
 
 
 // User Registration Api
@@ -117,7 +121,7 @@ app.post("/add-product", verifyToken, async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
-
+ 
 
 // Show all Product Api
 app.get("/products", verifyToken, async (req, res) => {
