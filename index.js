@@ -25,7 +25,9 @@ app.use(cors());
 // }
 // connectDB();
 
-app.get()
+app.get('/', (req, res) => {
+    res.send("Hi This is Test Get Api");
+})
 
 
 // User Registration Api
