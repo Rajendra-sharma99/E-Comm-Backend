@@ -16,7 +16,7 @@ app.use(cors({
 }));
 
 app.get('/', (req, res) => {
-    res.send("API Working Fine ✅");
+    res.send("API Working Fine Test done");
 });
 
 app.post("/register", async (req, res) => {
