@@ -13,22 +13,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-
-// Database connecting
-// const connectDB = async()=> {
-//     mongoose.connect("mongodb://127.0.0.1:27017/e-comm");
-//     const productSchema = new mongoose.Schema({});
-//     const product = mongoose.model("users", productSchema);
-//     const data = await product.find();
-//     console.log(data);
-
-// }
-// connectDB();
-
 app.get('/', (req, res) => {
     res.send("Hi This is Test Get Api");
 })
-
 
 // User Registration Api
 app.post("/register", async (req, res) => {
@@ -51,8 +38,6 @@ app.post("/register", async (req, res) => {
         // Remove password from the user object for security reasons
         const result = user.toObject();
         delete result.password;
-
-
 
         // Return success response
         // res.status(200).json({ message: "Registration successful", user: result });
