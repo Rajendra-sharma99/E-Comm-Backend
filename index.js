@@ -47,29 +47,28 @@ app.post("/register", async (req, res) => {
     }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", async (req, resp) => {
     try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).send({ result: "Invalid credentials" });
+        if (!req.body.email || !req.body.password) {
+            return resp.status(400).json({ error: "Missing email or password" });
         }
 
-        const user = await User.findOne({ email, password }).select("-password");
+        let user = await User.findOne(req.body).select("-password");
+
         if (user) {
-            Jwt.sign({ user }, jwtKey, { expiresIn: "1h" }, (err, token) => {
-                if (err) {
-                    return res.status(500).send({ result: "Token generation failed" });
-                }
-                res.send({ user, auth: token });
+            resp.json({
+                user,
+                auth: "mock-jwt-token" // Replace with real JWT in real apps
             });
         } else {
-            res.status(404).send({ result: "User not found" });
+            resp.status(401).json({ error: "Invalid credentials" });
         }
-    } catch (err) {
-        console.error("Login error:", err);
-        res.status(500).send("Internal Server Error");
+    } catch (error) {
+        console.error("Login Error:", error);
+        resp.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 app.post("/add-product", verifyToken, async (req, res) => {
     try {
