@@ -8,17 +8,23 @@ const Jwt = require('jsonwebtoken');
 const jwtKey = 'e-comm';
 
 const app = express();
+
+// Middleware to parse incoming JSON data
 app.use(express.json());
+
+// CORS setup to allow cross-origin requests
 app.use(cors({
-    origin: '*',
-    methods: ['GET','POST','PUT','DELETE'],
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Test endpoint to check if the API is working
 app.get('/', (req, res) => {
     res.send("API Working Fine Test done");
 });
 
+// Register endpoint
 app.post("/register", async (req, res) => {
     try {
         const { email } = req.body;
@@ -47,18 +53,25 @@ app.post("/register", async (req, res) => {
     }
 });
 
+// Login endpoint
 app.post("/login", async (req, resp) => {
     try {
-        if (!req.body.email || !req.body.password) {
+        const { email, password } = req.body;
+        if (!email || !password) {
             return resp.status(400).json({ error: "Missing email or password" });
         }
 
-        let user = await User.findOne(req.body).select("-password");
+        let user = await User.findOne({ email, password }).select("-password");
 
         if (user) {
-            resp.json({
-                user,
-                auth: "mock-jwt-token" // Replace with real JWT in real apps
+            Jwt.sign({ user }, jwtKey, { expiresIn: '1h' }, (err, token) => {
+                if (err) {
+                    return resp.status(500).json({ error: "JWT creation failed" });
+                }
+                resp.json({
+                    user,
+                    auth: token
+                });
             });
         } else {
             resp.status(401).json({ error: "Invalid credentials" });
@@ -69,8 +82,8 @@ app.post("/login", async (req, resp) => {
     }
 });
 
-
-app.post("/add-product", verifyToken, async (req, res) => {
+// Add product endpoint with token verification middleware
+app.post("/add-product", async (req, res) => {
     try {
         let product = new Product(req.body);
         let result = await product.save();
@@ -81,7 +94,8 @@ app.post("/add-product", verifyToken, async (req, res) => {
     }
 });
 
-app.get("/products", verifyToken, async (req, res) => {
+// Get all products endpoint with token verification middleware
+app.get("/products", async (req, res) => {
     try {
         const products = await Product.find();
         res.send(products.length ? products : { result: "No Product found" });
@@ -91,7 +105,8 @@ app.get("/products", verifyToken, async (req, res) => {
     }
 });
 
-app.delete("/product/:id", verifyToken, async (req, res) => {
+// Delete a product endpoint with token verification middleware
+app.delete("/product/:id", async (req, res) => {
     try {
         const result = await Product.deleteOne({ _id: req.params.id });
         res.send(result);
@@ -101,7 +116,8 @@ app.delete("/product/:id", verifyToken, async (req, res) => {
     }
 });
 
-app.get("/product/:id", verifyToken, async (req, res) => {
+// Get a specific product by ID with token verification middleware
+app.get("/product/:id", async (req, res) => {
     try {
         const result = await Product.findOne({ _id: req.params.id });
         res.send(result || { result: "No Record Found" });
@@ -111,7 +127,8 @@ app.get("/product/:id", verifyToken, async (req, res) => {
     }
 });
 
-app.put("/product/:id", verifyToken, async (req, res) => {
+// Update a product by ID with token verification middleware
+app.put("/product/:id", async (req, res) => {
     try {
         const result = await Product.updateOne({ _id: req.params.id }, { $set: req.body });
         res.send(result);
@@ -121,13 +138,14 @@ app.put("/product/:id", verifyToken, async (req, res) => {
     }
 });
 
-app.get("/search/:key", verifyToken, async (req, res) => {
+// Search for products by a key with token verification middleware
+app.get("/search/:key", async (req, res) => {
     try {
         const result = await Product.find({
             $or: [
                 { name: { $regex: req.params.key, $options: "i" } },
                 { company: { $regex: req.params.key, $options: "i" } },
-                { categry: { $regex: req.params.key, $options: "i" } },
+                { category: { $regex: req.params.key, $options: "i" } },
                 { price: { $regex: req.params.key, $options: "i" } }
             ]
         });
@@ -138,7 +156,8 @@ app.get("/search/:key", verifyToken, async (req, res) => {
     }
 });
 
-app.get("/profile", verifyToken, async (req, res) => {
+// Profile endpoint with token verification middleware
+app.get("/profile", async (req, res) => {
     try {
         const users = await User.find();
         res.send(users.length ? users : { result: "No User found" });
@@ -152,12 +171,12 @@ app.get("/profile", verifyToken, async (req, res) => {
 function verifyToken(req, res, next) {
     let token = req.headers['authorization'];
     if (token) {
-        token = token.split(' ')[1];
+        token = token.split(' ')[1]; // Assuming token is prefixed with "Bearer "
         Jwt.verify(token, jwtKey, (err, valid) => {
             if (err) {
-                return res.status(401).send("Please provide a valid token");
+                return res.status(401).send("Invalid or expired token");
             } else {
-                next();
+                next(); // Proceed to the next middleware or route handler
             }
         });
     } else {
@@ -165,5 +184,6 @@ function verifyToken(req, res, next) {
     }
 }
 
+// Server setup
 const port = 5000;
 app.listen(port, () => console.log(`✅ Server running at http://localhost:${port}`));
