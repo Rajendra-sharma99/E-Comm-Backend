@@ -13,11 +13,15 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-  origin: '*', // Allow all origins
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
+    origin: (origin, callback) => {
+      // Allow requests from any origin
+      callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true // If you're using cookies or Authorization headers
+  }));
+  
 
 // Test endpoint to check if the API is working
 app.get('/', (req, res) => {
