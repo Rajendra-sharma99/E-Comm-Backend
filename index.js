@@ -12,8 +12,6 @@ const app = express();
 // Middleware to parse incoming JSON data
 app.use(express.json());
 
-const cors = require('cors');
-
 app.use(cors({
   origin: '*', // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
