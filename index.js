@@ -12,12 +12,14 @@ const app = express();
 // Middleware to parse incoming JSON data
 app.use(express.json());
 
-// CORS setup to allow cross-origin requests
+const cors = require('cors');
+
 app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 
 // Test endpoint to check if the API is working
 app.get('/', (req, res) => {
